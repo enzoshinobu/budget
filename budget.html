@@ -305,7 +305,7 @@ img.txthumb{width:34px;height:34px;object-fit:cover;border-radius:10px;flex-shri
 
 <script>
 /* ================= VERSION & THEME ================= */
-const VERSION = "v5";
+const VERSION = "v6";
 document.querySelectorAll(".ver").forEach(el=>el.textContent=VERSION);
 function setCute(on){
   localStorage.setItem("cb_theme", on ? "cute" : "dark");
@@ -896,6 +896,25 @@ function renderAll(){
 }
 function moveMonth(d){ viewMonth.setMonth(viewMonth.getMonth()+d); renderHome(); }
 
+/* ================= SELF-UPDATE ================= */
+/* Home-screen web apps cache hard; check the server for a newer version and swap it in. */
+let lastUpdateCheck = 0;
+async function checkUpdate(){
+  if(location.protocol==="file:") return;
+  if(Date.now()-lastUpdateCheck < 30*60*1000) return; // at most every 30 min
+  lastUpdateCheck = Date.now();
+  try{
+    const res = await fetch(location.href.split("#")[0].split("?")[0], {cache:"no-store"});
+    if(!res.ok) return;
+    const html = await res.text();
+    const m = html.match(/const VERSION = "(v[\w.]+)"/);
+    if(m && m[1]!==VERSION){
+      toast("Updating to "+m[1]+" ✨");
+      setTimeout(()=>{ try{ document.open(); document.write(html); document.close(); }catch(_){ location.reload(); } }, 900);
+    }
+  }catch(_){/* offline is fine */}
+}
+
 /* ================= BOOT ================= */
 function boot(){
   if(!S){ $("scr-setup").classList.add("active"); return; }
@@ -917,9 +936,10 @@ document.addEventListener("focusout", ()=>{
     if(!a || !(a.matches && a.matches("input,select,textarea"))) document.body.classList.remove("kb");
   }, 100);
 });
-document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && S) syncNow(false); });
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden){ if(S) syncNow(false); checkUpdate(); } });
 setInterval(()=>{ if(!document.hidden && S) syncNow(false); }, 60000);
 boot();
+setTimeout(checkUpdate, 2500);
 </script>
 </body>
 </html>
