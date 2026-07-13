@@ -24,12 +24,14 @@ body.cute .seg.exp button.on{background:var(--red);color:#fff}
 body.cute .seg.inc button.on{background:var(--green);color:#fff}
 body.cute .tot,body.cute .card{box-shadow:0 2px 10px rgba(236,72,153,.08)}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html,body{height:100%}
+html,body{min-height:100%}
 body{
   font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Helvetica Neue",sans-serif;
   background:var(--bg);color:var(--text);
-  padding-bottom:calc(70px + env(safe-area-inset-bottom));
+  padding-bottom:calc(90px + env(safe-area-inset-bottom));
 }
+/* while the keyboard is open, add scroll room so bottom buttons stay reachable */
+body.kb{padding-bottom:60vh}
 h1,h2,h3{font-weight:700}
 button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
 input,select,textarea{
@@ -303,7 +305,7 @@ img.txthumb{width:34px;height:34px;object-fit:cover;border-radius:10px;flex-shri
 
 <script>
 /* ================= VERSION & THEME ================= */
-const VERSION = "v4";
+const VERSION = "v5";
 document.querySelectorAll(".ver").forEach(el=>el.textContent=VERSION);
 function setCute(on){
   localStorage.setItem("cb_theme", on ? "cute" : "dark");
@@ -902,6 +904,19 @@ function boot(){
   go("home");
   syncNow(false);
 }
+/* iOS keyboard handling: keep focused fields and bottom buttons scrollable */
+document.addEventListener("focusin", e=>{
+  if(e.target.matches && e.target.matches("input,select,textarea")){
+    document.body.classList.add("kb");
+    setTimeout(()=>{ try{ e.target.scrollIntoView({block:"center", behavior:"smooth"}); }catch(_){} }, 300);
+  }
+});
+document.addEventListener("focusout", ()=>{
+  setTimeout(()=>{
+    const a=document.activeElement;
+    if(!a || !(a.matches && a.matches("input,select,textarea"))) document.body.classList.remove("kb");
+  }, 100);
+});
 document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && S) syncNow(false); });
 setInterval(()=>{ if(!document.hidden && S) syncNow(false); }, 60000);
 boot();
